@@ -12,6 +12,9 @@ void SeminarAIModule::onStart()
  Broodwar->setLocalSpeed(0);//temp
  //Broodwar->setGUI(false);
 
+  // Center the screen so we actually see the enemy
+  Broodwar->setScreenPosition(250,300);
+
   Broodwar->printf("The map is %s, a %d player map",Broodwar->mapName().c_str(),Broodwar->getStartLocations().size());
   // Enable some cheat flags
   Broodwar->enableFlag(Flag::UserInput);
@@ -54,13 +57,23 @@ void SeminarAIModule::onStart()
   //myFile.open(name);
 
   configFile.open("trials.cfg");
-  char wasteline[1000]; //first get rid of the format line
+  //first get rid of the format line
+  char wasteline[1000]; 
   configFile.getline(wasteline, 1000);
+  // Read the output folder
+  configFile.getline(outputFolder, 250);
+  // Read the setting name (which will be used as a subfolder in the output folder)
+  configFile.getline(settingName, 100); // NB: This subfolder HAS TO EXIST!
+  // Read the number of trials
   char tmp[5];
-  configFile.getline(tmp, 5); //number of trials
+  configFile.getline(tmp, 5);
   trials = atoi(tmp);
   Broodwar->printf("Trials: %d",trials);
-
+  
+  // We only read the config line once
+  if (readConfigLine() == -1) {
+	Broodwar->leaveGame();
+  }
   restartExperiment(); 
   getState();
   std::string result;
@@ -140,21 +153,25 @@ void SeminarAIModule::restartExperiment(){
 		if (trialNumber == trials - 1)
 			Broodwar->leaveGame();
 	}
-	Broodwar->printf("restartExperiment()");
-	if(readConfigLine() == -1)
-		Broodwar->leaveGame();
+	// Once we reach the defined number of trials we stop
 	trialNumber++;
-	char name[100];
-	sprintf_s(name, "trial%d_out.txt", trialNumber);
-	myFile.open(name);
-	numKilled = 0;
-	numDied = 0;
-	episodeNumber=0;
-	adviceCount = 0;
-	cutOffEpisode = false;
+	if(trialNumber >= trials){
+		Broodwar->leaveGame();
+	} else {
+		Broodwar->printf("restartExperiment()");
+		char name[100];
+		// Open an output file in a subdirectory with settingName in the outputFolder
+		sprintf_s(name, "%s\\%s\\trial%d_out.txt", outputFolder, settingName, trialNumber);
+		myFile.open(name);
+		numKilled = 0;
+		numDied = 0;
+		episodeNumber=0;
+		adviceCount = 0;
+		cutOffEpisode = false;
 
 
-	initQ();
+		initQ();
+	}
 	
 }
 

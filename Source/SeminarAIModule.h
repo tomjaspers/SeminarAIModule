@@ -96,6 +96,9 @@ private:
   int getEnemyHealth();
   int readConfigLine();
 
+  char outputFolder[250]; 
+  char settingName[100];
+
   std::ofstream myFile;
   std::ifstream configFile;
 
