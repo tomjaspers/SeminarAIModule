@@ -14,5 +14,7 @@ const double dALPHA = 0.1;
 const double dEPSILON = 0.1;
 //const int NUMEPISODES = 500;
 
+const double SHAPING_WEIGHT = 1.0;
+
 const int NUMFEATURES = 6;
 const int NUMACTIONS = 7;

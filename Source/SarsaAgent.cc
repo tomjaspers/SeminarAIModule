@@ -71,7 +71,7 @@ int SarsaAgent::startEpisode( double state[], std::string* returnNote )
 }
 
 int SarsaAgent::step( double reward, double state[], std::string* returnNote, int episodeNumber,
-					  bool showLearning, bool cutOffEpisode )
+					  bool showLearning, bool cutOffEpisode, double shapingReward )
 {
 	int effectiveEp;
 	steps++;
@@ -79,6 +79,8 @@ int SarsaAgent::step( double reward, double state[], std::string* returnNote, in
 	os <<endl<<" REWARD: " << reward;
 		*returnNote += os.str();
 	double delta = reward - Q[ lastAction ];
+	// Add shaping reward here
+	delta += shapingReward;
 	FA->setState( state );
 	for ( int a = 0; a < getNumActions(); a++ ) {
 		Q[ a ] = FA->computeQ( a );

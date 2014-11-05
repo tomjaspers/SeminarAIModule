@@ -56,7 +56,7 @@ class SMDPAgent
 
   // abstract methods to be supplied by implementing class
   virtual int  startEpisode( double state[], std::string* returnNote ) = 0;
-  virtual int  step( double reward, double state[], std::string* returnNote, int episodeNumber, bool showLearning, bool cutOffEpisode) = 0; 
+  virtual int  step( double reward, double state[], std::string* returnNote, int episodeNumber, bool showLearning, bool cutOffEpisode, double shapingReward) = 0; 
   virtual void endEpisode( double reward, int episodeNum, bool showLearning, bool cutOffEpisode ) = 0;
 
   virtual bool loadWeights( char *filename ) = 0;

@@ -210,10 +210,10 @@ void SeminarAIModule::onFrame()
 
 		//Original debug text
 		//myFile << "startEpisode: " << episodeNumber << ": " << result.c_str() << "\r\n";
-
 		numSteps = 0;
 		episodeReward = 0.0;
 		justEnded = false;
+		prevPotential = 0.0;
 	  }
 	  else{
 		 // Broodwar->sendText("about to step() with STEPREWARD=%f", STEPREWARD);
@@ -223,7 +223,17 @@ void SeminarAIModule::onFrame()
 		  }else{
 			  cutOffEpisode = false;
 		  }
-		  int a = sa->step(STEPREWARD,m_State, &result, episodeNumber, showLearning, cutOffEpisode);
+		  // Reward shaping
+		  double currentPotential = getCurrentPotential();
+		  // TODO: Should be: (Gamma*currentPotential) - prevPotential,
+		  // but Gamma (of sarsa) is hardcoded to 1.0, so...
+		  double shapingReward = currentPotential - prevPotential;
+		  if (shapingReward < 0.0){
+			  shapingReward = 0;
+		  }
+		  shapingReward *= SHAPING_WEIGHT;
+		  prevPotential = currentPotential; // Switch potentials to remember it for the next time
+		  int a = sa->step(STEPREWARD,m_State, &result, episodeNumber, showLearning, cutOffEpisode, shapingReward);
 		  episodeReward += STEPREWARD;
 		  Broodwar->sendText("step(): %i, %s, action: %i", numSteps, result.c_str(), a);
 		  Broodwar->printf("MAL SEMINAR 2014-2015");
@@ -322,6 +332,8 @@ void SeminarAIModule::onUnitDestroy(BWAPI::Unit* unit)
 		//Broodwar->sendText("My %s was just killed, for a total of %d dead units (I've killed %d), and enemy has health left of %d",unit->getType().getName().c_str(), ++numDied, numKilled, iEnemyHealth);
 
 	}
+	// TODO: what should be done here for reward shaping?
+	prevPotential = 0;
     //Broodwar->sendText("about to endEpisode() with %d", (iOwnHealth - iEnemyHealth));
 	//myFile << "trial: " << trialNumber << " endEpisode: " << episodeNumber << " deltaHealth: " << (iOwnHealth - iEnemyHealth) << " reward: " << (episodeReward + (double)(iOwnHealth - iEnemyHealth)) << " steps: " << numSteps << "\r\n";
 	myFile << episodeNumber << "," << (episodeReward + (double)(iOwnHealth - iEnemyHealth)) << "," << numSteps << "\r\n";
@@ -667,4 +679,23 @@ double SeminarAIModule::getAngle(Position myPos, Position enemyPos){
   double deltaY = myPos.y() - enemyPos.y();
   //tan(theta) = opposite/adjacent = delta y / delta x
   return atan2(deltaY, deltaX);
+}
+
+double SeminarAIModule::getCurrentPotential(){
+	//0 my X position (0-1000)
+	//1 my Y position (0-1000)
+	//2 Straight-line distance between me and enemy (0-1000)
+	//3 difference in hit points between me and enemy (-50 - 50)
+	//4 enemy is moving/attacking? (0 or 1)
+	//5 angle of enemy relative to me (pi - pi)
+	
+	/**
+	 * Get closer to the enemy unless he is attacking you, then
+	 * move away from him.
+	 */
+	if (m_State[4] == 1) {
+		return (1000 - m_State[2]) / 10000.0;
+	} else {
+		return m_State[2] / 10000.0;
+	}
 }

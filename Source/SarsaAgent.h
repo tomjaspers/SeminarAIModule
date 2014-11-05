@@ -69,7 +69,7 @@ class SarsaAgent:public SMDPAgent
 
   // SMDP Sarsa implementation
   int  startEpisode( double state[], std::string* returnNote );
-  int  step( double reward, double state[], std::string* returnNote, int episodeNumber, bool showLearning, bool cutOffEpisode);//,double adviceQThreshold,int Qindex );
+  int  step( double reward, double state[], std::string* returnNote, int episodeNumber, bool showLearning, bool cutOffEpisode, double shapingReward);//,double adviceQThreshold,int Qindex );
   void endEpisode( double reward, int episodeNum, bool showLearning, bool cutOffEpisode );
 } ;
 

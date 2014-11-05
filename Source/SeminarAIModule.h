@@ -59,6 +59,7 @@ public:
 
 private:
   double m_State [10];
+  double prevPotential;
   SMDPAgent* sa;
 
   int UID;
@@ -95,6 +96,7 @@ private:
   int getMyHealth();
   int getEnemyHealth();
   int readConfigLine();
+  double getCurrentPotential();
 
   char outputFolder[250]; 
   char settingName[100];
