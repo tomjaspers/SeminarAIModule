@@ -87,6 +87,8 @@ private:
   double adviceQThreshold; //Q value threshold above which the teacher gives advice (Q value range, state importance Teacher)
   int Qindex; //Index showing with what value the best value will be compared , e.g. if Qindex = 1 the best value will compred to the second one, if it is 9 it will be compared to the worst
 
+  double shapingWeight; // the weight of the shaping
+
   void restartExperiment();
   void initQ();
   void getState();
@@ -96,7 +98,9 @@ private:
   int getMyHealth();
   int getEnemyHealth();
   int readConfigLine();
+
   double getCurrentPotential();
+
 
   char outputFolder[250]; 
   char settingName[100];
