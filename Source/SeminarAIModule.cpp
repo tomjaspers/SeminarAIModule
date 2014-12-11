@@ -77,6 +77,7 @@ void SeminarAIModule::onStart()
   restartExperiment(); 
   getState();
   std::string result;
+  potential = new Potential(m_State);
   executeAction(sa->startEpisode(m_State, &result));
   numSteps = 0;
   episodeReward = 0.0;
@@ -228,17 +229,15 @@ void SeminarAIModule::onFrame()
 			  cutOffEpisode = false;
 		  }
 		  // Reward shaping
-		  //double currentPotential = getCurrentPotential();
-		  // TODO: Should be: (Gamma*currentPotential) - prevPotential,
-		  // but Gamma (of sarsa) is hardcoded to 1.0, so...
-		  //double shapingReward = currentPotential - prevPotential;
+
+		  double currentPotential = getCurrentPotential();
+		  // TODO: Should be: (Gamma*currentPotential) - prevPotential, but Gamma (of sarsa) is hardcoded to 1.0, so...
+		  double shapingReward = currentPotential - prevPotential;
+		  // Disabled this b/c Peter said it's not really needed
 		  // if (shapingReward < 0.0){
 		  //	  shapingReward = 0;
 		  // }
-		
-		  //shapingReward *= shapingWeight;
-		  // Linear decrease / polynomial, depenidng on power
-		  // shapingReward *= shapingWeight-((shapingWeight*pow((float)episodeNumber, 1))/pow((float)numEpisodes, 1));
+		  shapingReward *= shapingWeight;
 		  prevPotential = currentPotential; // Switch potentials to remember it for the next time
 		  int a = sa->step(STEPREWARD,m_State, &result, episodeNumber, showLearning, cutOffEpisode, shapingReward);
 		  episodeReward += STEPREWARD;
@@ -689,30 +688,5 @@ double SeminarAIModule::getAngle(Position myPos, Position enemyPos){
 }
 
 double SeminarAIModule::getCurrentPotential(){
-	//0 my X position (0-1000)
-	//1 my Y position (0-1000)
-	//2 Straight-line distance between me and enemy (0-1000)
-	//3 difference in hit points between me and enemy (-50 - 50)
-	//4 enemy is moving/attacking? (0 or 1)
-	//5 angle of enemy relative to me (pi - pi)
-
-	/**
-	 * Get closer to the enemy unless he is attacking you, 
-	 * in which case move away from him
-	 * Returns between 0,0001 and 0,1
-	 */
-	double potential;
-	if (m_State[4] == 0) {
-		// Enemy is not attacking -> move to him
-		potential = (1000 - m_State[2]) / 10000.0;
-	} else {
-		// Enemy is attacking -> move away
-		potential = m_State[2] / 10000.0;
-	}
-
-	potential += (3.14159265 - m_State[5])/20;
-
-	return potential;
+	return potential->getLinearScalarizedPotential();
 }
-
-

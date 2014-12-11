@@ -9,6 +9,7 @@
 #include "CMAC.h"
 #include "SarsaAgent.h"
 #include "FuncApprox.h"
+#include "Potential.h"
 #include <iostream>
 #include <fstream>
 #include <cstring>
@@ -61,6 +62,7 @@ private:
   double m_State [10];
   double prevPotential;
   SMDPAgent* sa;
+  Potential* potential;
 
   int UID;
 
