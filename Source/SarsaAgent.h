@@ -37,9 +37,13 @@ class SarsaAgent:public SMDPAgent
   double epsilon;
 
   FunctionApproximator * FA;
+  FunctionApproximator *shapingFA;
   CMAC * TeacherFA;
 
   double Q[ MAX_ACTIONS ];
+  double potential[ MAX_ACTIONS ];
+
+  double lastPotential;
 
   // Load / Save weights from/to disk
   bool loadWeights( char *filename );
@@ -58,6 +62,7 @@ class SarsaAgent:public SMDPAgent
 				      // the function approximator should be created 
 				      // with ranges, resolutions, numbers of features and actions
 				      FunctionApproximator *anFA,
+					  FunctionApproximator *shapingFA,
 				      std::string* returnNote,
 					  char   *loadWeightsFile = ""
 					  );

@@ -16,6 +16,7 @@ inline int range_rand( int minRange, int maxRange )
 
 SarsaAgent::SarsaAgent( double alph, double lambd, int numFeatures, int numActions, bool bLearn,
 					   FunctionApproximator *anFA,
+					   FunctionApproximator *aShapingFA,
 					   std::string* returnNote,
 					   char *loadWeightsFile
 					   ): 
@@ -37,6 +38,7 @@ SMDPAgent( numFeatures, numActions )
 	lastAction = -1;
 
 	FA = anFA;
+	shapingFA = aShapingFA;
 	std::ostringstream os;
 
 	if ( strlen( loadWeightsFile ) > 0 )
@@ -63,7 +65,7 @@ int SarsaAgent::startEpisode( double state[], std::string* returnNote )
 	//*returnNote += os.str(); //tempString;
 
 	lastAction = selectAction(returnNote);
-
+	lastPotential = 0.0;
 
 	FA->updateTraces( lastAction );
 
@@ -80,7 +82,7 @@ int SarsaAgent::step( double reward, double state[], std::string* returnNote, in
 		*returnNote += os.str();
 	double delta = reward - Q[ lastAction ];
 	// Add shaping reward here
-	delta += shapingReward;
+	//delta += shapingReward;
 	FA->setState( state );
 	for ( int a = 0; a < getNumActions(); a++ ) {
 		Q[ a ] = FA->computeQ( a );
@@ -110,9 +112,13 @@ int SarsaAgent::step( double reward, double state[], std::string* returnNote, in
 		return lastAction;
 	}
 
-	//Learn based on lastAction
-	delta += Q[ lastAction ];
+	//Learn based on lastAction + feedback
+	double shapingDelta = shapingReward - potential[lastAction];
+	shapingFA->updateWeights( shapingDelta, alpha );
+	potential[ lastAction ] = shapingFA->computeQ( lastAction );
+	delta += (gamma*potential[ lastAction ] - lastPotential)+ Q[ lastAction ]; 
 	FA->updateWeights( delta, alpha );
+
 	Q[ lastAction ] = FA->computeQ( lastAction ); // need to redo because weights changed
 	FA->decayTraces( gamma * lambda );
 
@@ -122,6 +128,8 @@ int SarsaAgent::step( double reward, double state[], std::string* returnNote, in
 		}
 	}
 	FA->updateTraces( lastAction );  //replace/set traces F[a]
+
+	lastPotential = potential[ lastAction ];
 
 	return lastAction;
 }
@@ -137,6 +145,8 @@ void SarsaAgent::endEpisode( double reward, int episodeNum, bool showLearning, b
 			cerr << "We're assuming gamma's 1" << endl;
 		if (!cutOffEpisode && !(showLearning && (episodeNum % 2 != 0))){
 			double delta = reward - Q[ lastAction ];
+			//potential[ lastAction ] = shapingFA->computeQ( lastAction );
+			//delta += (gamma*potential[ lastAction ] - lastPotential)+ Q[ lastAction ]; 
 			FA->updateWeights( delta, alpha );
 		}
 		ofstream log;
@@ -145,6 +155,7 @@ void SarsaAgent::endEpisode( double reward, int episodeNum, bool showLearning, b
 		log.close();
 	}
 	lastAction = -1;
+	lastPotential = 0;
 }
 
 int SarsaAgent::selectAction(std::string* returnNote)

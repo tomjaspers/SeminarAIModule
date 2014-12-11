@@ -7,9 +7,9 @@ int numKilled, numDied;
 bool advicegiven;
 
 void SeminarAIModule::onStart()
-{
- //Broodwar->setLocalSpeed(-1);
- Broodwar->setLocalSpeed(0);//temp
+{ 
+ // start with slow speed
+ Broodwar->setLocalSpeed(-1);
  //Broodwar->setGUI(false);
 
   // Center the screen so we actually see the enemy
@@ -30,6 +30,7 @@ void SeminarAIModule::onStart()
   show_visibility_data=false;
 
   humanOn = false;
+  numFeedbackEpisodes = 6;
 
   if (Broodwar->isReplay())
   {
@@ -199,13 +200,25 @@ void SeminarAIModule::onFrame()
   if (Broodwar->isReplay())
     return;
 
-  drawStats();
+  
+  //drawStats();
+  bool keyAPressed =Broodwar->getKeyState(BWAPI::K_A);
   if (Broodwar->getFrameCount()%30==0){
-	  //Broodwar->sendText("Beep");
-	  
+	  // Reward shaping through human feedback
+	  double shapingReward = 0.0;
+	  if (keyAPressed) {
+		  Broodwar->printf("PUNISHMENT!");
+		  shapingReward = -1.0;
+		  keyAPressed = false;
+	  }
 	  getState();
 	  std::string result ("");
 	  if (justEnded){
+		// Resume at normal game speed
+	    if (episodeNumber == numFeedbackEpisodes){
+				Broodwar->printf("ENDING FEEDBACK MODE");
+				Broodwar->setLocalSpeed(0);
+		}
 	    if (episodeNumber >= numEpisodes){
 		    restartExperiment();
 		}
@@ -228,20 +241,9 @@ void SeminarAIModule::onFrame()
 		  }else{
 			  cutOffEpisode = false;
 		  }
-		  // Reward shaping
-
-		  double currentPotential = getCurrentPotential();
-		  // TODO: Should be: (Gamma*currentPotential) - prevPotential, but Gamma (of sarsa) is hardcoded to 1.0, so...
-		  double shapingReward = currentPotential - prevPotential;
-		  // Disabled this b/c Peter said it's not really needed
-		  // if (shapingReward < 0.0){
-		  //	  shapingReward = 0;
-		  // }
-		  shapingReward *= shapingWeight;
-		  prevPotential = currentPotential; // Switch potentials to remember it for the next time
 		  int a = sa->step(STEPREWARD,m_State, &result, episodeNumber, showLearning, cutOffEpisode, shapingReward);
 		  episodeReward += STEPREWARD;
-		  Broodwar->sendText("step(): %i, %s, action: %i", numSteps, result.c_str(), a);
+		  Broodwar->sendText("step(): %i, %s, action: %i, shapingReward: %f", numSteps, result.c_str(), a, shapingReward);
 		  Broodwar->printf("MAL SEMINAR 2014-2015");
 		  Broodwar->printf("alpha: %f,lambda: %f",alpha,lambda);
 		  executeAction(a);
@@ -338,8 +340,6 @@ void SeminarAIModule::onUnitDestroy(BWAPI::Unit* unit)
 		//Broodwar->sendText("My %s was just killed, for a total of %d dead units (I've killed %d), and enemy has health left of %d",unit->getType().getName().c_str(), ++numDied, numKilled, iEnemyHealth);
 
 	}
-	// TODO: what should be done here for reward shaping?
-	prevPotential = 0;
     //Broodwar->sendText("about to endEpisode() with %d", (iOwnHealth - iEnemyHealth));
 	//myFile << "trial: " << trialNumber << " endEpisode: " << episodeNumber << " deltaHealth: " << (iOwnHealth - iEnemyHealth) << " reward: " << (episodeReward + (double)(iOwnHealth - iEnemyHealth)) << " steps: " << numSteps << "\r\n";
 	myFile << episodeNumber << "," << (episodeReward + (double)(iOwnHealth - iEnemyHealth)) << "," << numSteps << "\r\n";
@@ -558,15 +558,17 @@ void SeminarAIModule::initQ(){
   resolutions[5] = dRADIANDIVISOR;
 
   FunctionApproximator* FA;
+  FunctionApproximator* shapingFA;
  // CMAC* TeacherCMAC;
 
   FA          = new CMAC(NUMFEATURES, NUMACTIONS, ranges, minValues, resolutions);
+  shapingFA   = new CMAC(NUMFEATURES, NUMACTIONS, ranges, minValues, resolutions);
  // TeacherCMAC = new CMAC(NUMFEATURES, NUMACTIONS, ranges, minValues, resolutions);
   
   isLearning = true; //CRITICAL TEMP
   std::string result;
   // Learn from scratch
-  sa = new SarsaAgent(alpha,lambda,NUMFEATURES, NUMACTIONS, isLearning, FA, &result, "");
+  sa = new SarsaAgent(alpha,lambda,NUMFEATURES, NUMACTIONS, isLearning, FA, shapingFA, &result, "");
   
   // Test loading weights from a file
   // sa = new SarsaAgent(alpha,lambda,NUMFEATURES, NUMACTIONS, isLearning, FA, &result, "weights_250_0.wts");

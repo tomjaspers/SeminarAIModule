@@ -73,6 +73,7 @@ private:
   int numSteps;         // number of steps in the current episode
   double episodeReward;
   bool humanOn;
+  int numFeedbackEpisodes;
   int adviceCount;      // amount of advice given this episode
   bool cutOffEpisode;   // true if the episode went on too many steps and we shouldn't learn from the result
 
